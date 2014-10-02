@@ -15,8 +15,8 @@
 // To run on a BeagleBone Black equipped with a BLE USB adaptor connecting a Texas Instruments SenstorTag CC2451
 
 var util = require('util');
-var async = require('async');
 var SensorTag = require('sensortag');
+var async = require('async');
 var mqtt = require('mqtt');
 var getmac = require('getmac');
 var properties = require('properties');
@@ -32,7 +32,7 @@ var reg_domain = ".messaging.internetofthings.ibmcloud.com";
 var qs_host = "quickstart.messaging.internetofthings.ibmcloud.com";
 var qs_type = "iotsample-ti-bbst";
 var configFile = "./device.cfg";
-var ledPath ="/sys/class/leds/beaglebone:green:usr";
+//var ledPath ="/sys/class/leds/beaglebone:green:usr";
 
 
 // globals
@@ -49,9 +49,7 @@ var username;
 // LED functions
 // run asynchronously, callbacks just trap unexpected errors
 function ledWrite(extra, content, callback) {
-  fs.writeFile(ledPath+extra, content, function(err) {
-	if (err) throw err;
-  });
+  
   if (callback) callback();
 }
 
@@ -73,7 +71,7 @@ function ledBlink(led, rate) {
       ledWrite(led+"/delay_off", parseInt(400/rate));
 	} else {
 	  ledWrite(led+"/delay_on", 1);
-	  ledWrite(led+"/delay_off", 10000);	
+	  ledWrite(led+"/delay_off", 5000);	
 	}
 }
 
@@ -94,8 +92,8 @@ tagData.publish = function() {
 	// dont publish unless there is a full set of data
 	// alternative: only enable publish when most sensortag callbacks have fired
 
-	if (tagData.d.hasOwnProperty("temp")) {
 		client.publish(pub_topic, tagData.toJson());
+	if (tagData.d.hasOwnProperty("temp")) {
 		ledShot(3);
 		//console.log(pub_topic, tagData.toJson()); // trace
 	}
@@ -283,54 +281,23 @@ SensorTag.discover(function(sensorTag) {
 				});
 			},
 			function(callback) {
-				console.log('enableIrTemperature');
-				sensorTag.enableIrTemperature(callback);
-			},
-			function(callback) {
 				console.log('enableAccelerometer');
 				sensorTag.enableAccelerometer(callback);
 			},
 			function(callback) {
-				sensorTag.setAccelerometerPeriod(1000, callback);
-			},
-			function(callback) {
-				console.log('enableHumidity');
-				sensorTag.enableHumidity(callback);
-			},
-			function(callback) {
-				console.log('enableMagnetometer');
-				sensorTag.enableMagnetometer(callback);
-			},
-			function(callback) {
-				sensorTag.setMagnetometerPeriod(1000, callback);
-			},
-			function(callback) {
-				console.log('enableBarometricPressure');
-				sensorTag.enableBarometricPressure(callback);
+				sensorTag.setAccelerometerPeriod(500, callback);
 			},
 			function(callback) {
 				console.log('enableGyroscope');
 				sensorTag.enableGyroscope(callback);
 			},
 			function(callback) {
-				setTimeout(callback, 1000);
+				setTimeout(callback, 500);
 				setInterval(function(tag) {
 					tag.publish();
-				}, 1000, tagData);
-			},
+				}, 500, tagData);
+			},			
 			function(callback) {
-				sensorTag.on('irTemperatureChange', function(objectTemperature,
-						ambientTemperature) {
-					tagData.d.objectTemp = parseFloat(objectTemperature.toFixed(1));
-					tagData.d.ambientTemp = parseFloat(ambientTemperature.toFixed(1));
-				});
-
-				sensorTag.notifyIrTemperature(function() {
-
-				});
-
-				callback();
-			}, function(callback) {
 				sensorTag.on('accelerometerChange', function(x, y, z) {
 					tagData.d.accelX = parseFloat(x.toFixed(1));
 					tagData.d.accelY = parseFloat(y.toFixed(1));
@@ -342,40 +309,7 @@ SensorTag.discover(function(sensorTag) {
 				});
 
 				callback();
-			}, function(callback) {
-				sensorTag.on('humidityChange', function(temperature, humidity) {
-					tagData.d.humidity = parseFloat(humidity.toFixed(1));
-					tagData.d.temp = parseFloat(temperature.toFixed(1));
-				});
-
-				sensorTag.notifyHumidity(function() {
-
-				});
-
-				callback();
-			}, function(callback) {
-				sensorTag.on('magnetometerChange', function(x, y, z) {
-					tagData.d.magX = parseFloat(x.toFixed(1));
-					tagData.d.magY = parseFloat(y.toFixed(1));
-					tagData.d.magZ = parseFloat(z.toFixed(1));
-				});
-
-				sensorTag.notifyMagnetometer(function() {
-
-				});
-
-				callback();
-			}, function(callback) {
-				sensorTag.on('barometricPressureChange', function(pressure) {
-					tagData.d.pressure = parseFloat(pressure.toFixed(1));
-				});
-
-				sensorTag.notifyBarometricPressure(function() {
-
-				});
-
-				callback();
-			},
+			}, 
 
 			function(callback) {
 				sensorTag.on('gyroscopeChange', function(x, y, z) {
@@ -389,20 +323,8 @@ SensorTag.discover(function(sensorTag) {
 				});
 				callback();
 			},
-
+			
 			function(callback) {
-				sensorTag.on('simpleKeyChange', function(left, right) {
-					console.log('keys left: ' + left + '  right: ' + right);
-
-					if (left && right) {
-						sensorTag.notifySimpleKey(callback);
-					}
-				});
-
-				sensorTag.notifySimpleKey(function() {
-
-				});
-			}, function(callback) {
 				console.log('disconnect');
 				sensorTag.disconnect(callback);
 			} ]);
